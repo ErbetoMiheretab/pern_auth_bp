@@ -7,6 +7,10 @@ export default (sequelize) => {
     "User",
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+      username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -14,7 +18,14 @@ export default (sequelize) => {
         validate: { isEmail: true },
       },
       passwordHash: { type: DataTypes.STRING, allowNull: false },
-      isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+      password: {
+        type: DataTypes.VIRTUAL,
+        set(value) {
+          // Temporarily store the raw password to access in hooks or validation
+          this.setDataValue("password", value);
+        },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+      },
     },
 
     {
@@ -22,11 +33,12 @@ export default (sequelize) => {
       timestamps: true,
       indexes: [{ unique: true, fields: ["email"] }],
       hooks: {
-        beforeCreate: async (user) => {
-          user.passwordHash = await bcrypt.hash(
-            user.passwordHash,
-            vars.bcrypt.saltRounds
-          );
+        beforeValidate: async (user) => {
+          if (user.password) {
+            const rounds = vars.bcrypt && vars.bcrypt.saltRounds ? parseInt(vars.bcrypt.saltRounds) : 10;
+            const salt = await bcrypt.genSalt(vars.bcrypt.saltRounds || 10);
+            user.passwordHash = await bcrypt.hash(user.password, salt);
+          }
         },
         beforeUpdate: async (user) => {
           if (user.changed("passwordHash")) {
@@ -45,6 +57,7 @@ export default (sequelize) => {
   User.prototype.toJSON = function () {
     const values = { ...this.get() };
     delete values.passwordHash;
+    delete values.password;
     return values;
   };
   return User;

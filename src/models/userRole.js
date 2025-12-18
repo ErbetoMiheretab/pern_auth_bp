@@ -1,3 +1,6 @@
+import { DataTypes } from "sequelize";
+
+
 export default (sequelize) => {
   const UserRole = sequelize.define(
     "UserRole",
