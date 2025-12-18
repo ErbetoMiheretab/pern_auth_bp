@@ -1,0 +1,10 @@
+import sequelize from '../config/db';
+const User = require('./user')(sequelize);
+const Role = require('./role')(sequelize);
+const UserRole = require('./userRole')(sequelize);
+const RefreshToken = require('./refreshToken')(sequelize);
+User.belongsToMany(Role, { through: UserRole, as: 'roles' });
+Role.belongsToMany(User, { through: UserRole, as: 'users' });
+User.hasMany(RefreshToken, { foreignKey: 'userId', as: 'refreshTokens' });
+RefreshToken.belongsTo(User, { foreignKey: 'userId' });
+export default { sequelize, User, Role, UserRole, RefreshToken };

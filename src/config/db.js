@@ -1,13 +1,13 @@
-const { Sequelize, Model } = require("sequelize");
-const vars = require("./vars");
+import { Sequelize } from "sequelize";
+import { db, env } from "./vars";
 
-const sequelize = new Sequelize(vars.db.name, vars.db.user, vars.db.password, {
-  host: vars.db.host,
-  port: vars.db.port,
+const sequelize = new Sequelize(db.name, db.user, db.password, {
+  host: db.host,
+  port: db.port,
   dialect: "postgres",
-  logging: vars.env === "test" ? false : console.log,
+  logging: env === "test" ? false : console.log,
   pool: { max: 5, min: 0, acquire: 30000, idle: 10000 },
 });
 
 
-module.exports = sequelize
+export default sequelize
