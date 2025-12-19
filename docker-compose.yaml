@@ -1,0 +1,29 @@
+services:
+  postgres_test:
+    image: postgres:17-alpine
+    container_name: pern_postgres_test
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: pernAuthTest
+    ports:
+      - "5549:5432"
+    profiles: ["test"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis_test:
+    image: redis:7-alpine
+    container_name: pern_redis_test
+    command: ["redis-server", "--requirepass", "admin123"]
+    environment:
+      REDIS_PASSWORD: admin123
+    ports:
+      - "6381:6379"
+    profiles: ["test"]
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data: {}
+  redis_data: {}

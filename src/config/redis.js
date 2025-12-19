@@ -4,14 +4,14 @@ import { redis as redisVars, env } from "./vars.js"; // Assuming this holds your
 
 let redis;
 
-if (process.env.NODE_ENV === "test") {
-  // Use the mock client for tests
-  redis = new RedisMock();
-} else {
-  // Use the real ioredis client for dev/production
+// if (process.env.NODE_ENV === "test") {
+//   // Use the mock client for tests
+//   redis = new RedisMock();
+// } else {
+  // Use the real ioredis client for dev/production/test
   redis = new Redis({
     host: redisVars.host || "127.0.0.1",
-    port: redisVars.port || 6378,
+    port: redisVars.port || 6379,
     password: redisVars.password || undefined,
     maxRetriesPerRequest: 3,
     // ioredis connects automatically, no need for manual .connect()
@@ -22,9 +22,10 @@ if (process.env.NODE_ENV === "test") {
   });
 
   redis.on("error", (err) => {
-    console.error("Redis Connection Error:", err);
+    // Suppress connection errors during tests if you like, or log them
+    if (env !== "test") console.error("Redis Connection Error:", err);
   });
-}
+//}
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {

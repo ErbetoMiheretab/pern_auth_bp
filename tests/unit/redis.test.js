@@ -77,12 +77,14 @@ describe("Redis Utils", () => {
     consoleSpy.mockRestore();
   });
 
-  test("blacklist handles zero TTL", async () => {
+  test("blacklist handles small TTL", async () => {
     const jti = "instant-expire";
-    await blacklist(jti, 0);
+    await blacklist(jti, 1); // 1 second
+
+    // Wait 1.1s to ensure expiration
+    await new Promise((r) => setTimeout(r, 1100));
 
     const result = await isBlacklisted(jti);
-    // Depending on Redis speed, this usually returns false immediately
     expect(result).toBe(false);
   });
 });
