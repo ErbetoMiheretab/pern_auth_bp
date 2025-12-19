@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-export const env = process.env.NODE_ENV;
+export const env = process.env.NODE_ENV || "development";
 export const port = process.env.PORT || 4000;
 
 export const db = {
@@ -29,6 +29,20 @@ export const jwt = {
 export const bcrypt = {
   saltRounds: parseInt(process.env.SALT_ROUNDS, 10) || 12,
 };
+
+// ---- ENV VALIDATION ----
+const required = [
+  "ACCESS_SECRET",
+  "REFRESH_SECRET",
+  "ACCESS_EXPIRE",
+  "REFRESH_EXPIRE",
+];
+
+required.forEach((key) => {
+  if (!process.env[key]) {
+    throw new Error(`Missing required env var: ${key}`);
+  }
+});
 
 // 👇 Add this at the bottom
 export default { env, port, db, redis, jwt, bcrypt };
