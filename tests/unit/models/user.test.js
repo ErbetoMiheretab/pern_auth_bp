@@ -10,8 +10,7 @@ describe('User Model (SQLite)', () => {
       // Authenticate connection and sync the database schema
       await sequelize.authenticate();
       await sequelize.sync({ force: true }); 
-      // SQLite requires PRAGMA for foreign keys to be enforced
-      await sequelize.query("PRAGMA foreign_keys = ON;");
+      // Postgres enforces FKs by default, so no PRAGMA needed
     } catch (error) {
       console.error('Unable to connect to the database or sync schema:', error);
       throw error; 
