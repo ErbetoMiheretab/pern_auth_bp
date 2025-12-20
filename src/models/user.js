@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 import bcrypt from "bcrypt";
-import vars from "../config/vars";
+import vars from "../config/vars.js";
 
 export default (sequelize) => {
   const User = sequelize.define(

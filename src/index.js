@@ -2,17 +2,17 @@ import express, { json } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { port } from "./config/vars";
-import { sequelize } from "./models";
-import authRoutes from "./routes/auth.routes";
-import protectedRoutes from "./routes/protected.routes";
+import { port } from "./config/vars.js";
+import { sequelize } from "./models/index.js";
+import authRoutes from "./auth/auth.routes.js";
+// import protectedRoutes from "./routes/protected.routes";
 // import ApiError from "./utils/ApiError";
 
 const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN || "http://localhost:4000",
     credentials: true,
   })
 );

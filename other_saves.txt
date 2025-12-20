@@ -1,0 +1,13 @@
+server.get(
+  "/admin/dashboard",
+  authorize,
+  requireRole("admin"),
+  getAdminDashboard
+);
+
+server.delete(
+  "/posts/:id",
+  authorize,
+  requireRole("admin", "editor"), // either role can delete
+  deletePost
+);

@@ -1,0 +1,40 @@
+    it("should prefer cookie over body when both are provided", async () => {
+      // Login to get a valid token
+      const loginRes = await request(app).post("/auth/login").send({
+        email: "test@example.com",
+        password: "Password123!",
+      });
+
+      const cookies = loginRes.headers["set-cookie"];
+
+      // Create another session
+      const login2 = await request(app).post("/auth/login").send({
+        email: "test@example.com",
+        password: "Password123!",
+      });
+
+      const cookies2 = login2.headers["set-cookie"];
+      const bodyToken = cookies2
+        .find((c) => c.startsWith("refreshToken="))
+        ?.split(";")[0]
+        .split("=")[1];
+
+      // Logout with both cookie and body
+      const logoutRes = await request(app)
+        .post("/auth/logout")
+        .set("Cookie", cookies)
+        .send({ refreshToken: bodyToken });
+      expect(logoutRes.status).toBe(204);
+
+      // Cookie token should not work (was logged out)
+      const refreshCookie = await request(app)
+        .post("/auth/refresh")
+        .set("Cookie", cookies);
+      expect(refreshCookie.status).toBe(401);
+
+      // Body token should still work (was not logged out)
+      const refreshBody = await request(app)
+        .post("/auth/refresh")
+        .send({ refreshToken: bodyToken });
+      expect(refreshBody.status).toBe(200);
+    });
