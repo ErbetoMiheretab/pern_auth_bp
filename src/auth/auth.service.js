@@ -9,8 +9,6 @@ import { jwt as jwtConfig } from "../config/vars.js";
 
 /**
  * Register a new user
- * @param {Object} userData
- * @returns {Promise<{user: Object, accessToken: String, refreshToken: String}>}
  */
 export const register = async (userData) => {
   const existingUser = await User.findOne({ where: { email: userData.email } });
@@ -43,10 +41,7 @@ export const register = async (userData) => {
 
 /**
  * Login with email and password
- * @param {String} email
- * @param {String} password
- * @returns {Promise<{user: Object, accessToken: String, refreshToken: String}>}
- */
+*/
 export const login = async (email, password) => {
   const user = await User.findOne({ where: { email } });
   if (!user) {
@@ -83,8 +78,6 @@ export const login = async (email, password) => {
 
 /**
  * Refresh access token
- * @param {String} token - Refresh token
- * @returns {Promise<{accessToken: String, refreshToken: String}>}
  */
 export const refresh = async (token) => {
   if (!token) {
@@ -146,7 +139,6 @@ export const refresh = async (token) => {
 
 /**
  * Logout (Revoke Refresh Token)
- * @param {String} token - Refresh token
  */
 export const logout = async (token) => {
   if (!token) return;
