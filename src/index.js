@@ -5,6 +5,10 @@ import cookieParser from "cookie-parser";
 import { port } from "./config/vars.js";
 import { sequelize } from "./models/index.js";
 import authRoutes from "./auth/auth.routes.js";
+
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js";
+
 // import protectedRoutes from "./routes/protected.routes";
 // import ApiError from "./utils/ApiError";
 
@@ -20,12 +24,15 @@ app.use(json());
 app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 // app.use("/api", protectedRoutes);
-// app.use((err, req, res, next) => {
-//   if (err instanceof ApiError)
-//     return res.status(err.status).json({ message: err.message });
-//   console.error(err);
-//   res.status(500).json({ message: "Internal server error" });
-// });
+
+// Swagger docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use((err, req, res, next) => {
+  const status = err.status || 500;
+  if (status === 500) console.error(err);
+  res.status(status).json({ message: err.message });
+});
 
 const PORT = port;
 app.listen(PORT, async () => {

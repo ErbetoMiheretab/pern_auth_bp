@@ -51,7 +51,7 @@ export const login = async (req, res, next) => {
 export const refresh = async (req, res, next) => {
   try {
     // Prefer cookie, fallback to body
-    const token = req.cookies?.refreshToken || req.body.refreshToken;
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
     const { accessToken, refreshToken } = await authService.refresh(token);
 
     // Update Refresh Token Cookie (Rotation)
@@ -70,7 +70,7 @@ export const refresh = async (req, res, next) => {
  */
 export const logout = async (req, res, next) => {
   try {
-    const token = req.cookies?.refreshToken || req.body.refreshToken;
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
     await authService.logout(token);
 
     // Clear the cookie

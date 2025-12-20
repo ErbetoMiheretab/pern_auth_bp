@@ -137,7 +137,7 @@ export const tokenStore = {
     }
 
     try {
-      await redisClient.setEx(`revoked:jti:${jti}`, ttl, "1");
+      await redisClient.setex(`revoked:jti:${jti}`, ttl, "1");
     } catch (err) {
       console.error("Redis error (revoke):", err.message);
     }
