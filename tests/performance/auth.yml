@@ -1,0 +1,236 @@
+config:
+  target: "http://localhost:4000"
+  
+  # Load test phases
+  phases:
+    # Phase 1: Warm-up
+    - duration: 20
+      arrivalRate: 5
+      name: "Warm up"
+    
+    # Phase 2: Ramp up
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up load"
+    
+    # Phase 3: Sustained load
+    - duration: 60
+      arrivalRate: 20
+      name: "Sustained load"
+    
+    # Phase 4: Brief Cool down
+    - duration: 20
+      arrivalRate: 20
+      rampTo: 5
+      name: "Cool down"
+  
+  # HTTP configuration
+  http:
+    jar: true  # Enable cookie jar to handle HttpOnly cookies (refreshToken)
+    timeout: 10  # 10 second timeout for requests
+  
+  # Plugins for enhanced reporting
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+  
+  # Variables that can be overridden
+  variables:
+    baseUrl: ""
+    testUserEmail: "test@example.com"
+    testUserPassword: "Password123!"
+
+  # Environment-specific configurations
+  environments:
+    local:
+      target: "http://localhost:4000"
+    
+    staging:
+      target: "https://staging-api.example.com"
+      phases:
+        - duration: 60
+          arrivalRate: 20
+          name: "Staging load test"
+    
+    production:
+      target: "https://api.example.com"
+      phases:
+        - duration: 30
+          arrivalRate: 10
+          name: "Production smoke test"
+
+# Test scenarios with different workflows
+scenarios:
+  # ============================================================================
+  # Scenario 1: Complete Authentication Flow (40% of traffic)
+  # Tests: Register → Refresh → Logout
+  # ============================================================================
+  - name: "Complete Auth Flow"
+    weight: 40
+    flow:
+      # Step 1: Register new user with unique credentials
+      - post:
+          url: "/api/auth/register"
+          json:
+            username: "user_{{ $uuid() }}"
+            email: "user_{{ $uuid() }}@loadtest.com"
+            password: "TestPass123!"
+          capture:
+            - json: "$.accessToken"
+              as: "accessToken"
+            - json: "$.user.id"
+              as: "userId"
+          expect:
+            - statusCode: 201
+            - hasProperty: "accessToken"
+            - hasProperty: "user"
+      
+      # Step 2: Think time - simulate user reading welcome page
+      - think: 3
+      
+      # Step 3: Refresh the token
+      - post:
+          url: "/api/auth/refresh"
+          expect:
+            - statusCode: 200
+            - hasProperty: "accessToken"
+          capture:
+            - json: "$.accessToken"
+              as: "newAccessToken"
+      
+      # Step 4: Think time - simulate user activity
+      - think: 5
+      
+      # Step 5: Logout
+      - post:
+          url: "/api/auth/logout"
+          expect:
+            - statusCode: 204
+
+  # ============================================================================
+  # Scenario 2: Login and Logout with Existing User (40% of traffic)
+  # Tests: Login → Use App → Logout
+  # ============================================================================
+  - name: "Login and Logout"
+    weight: 40
+    flow:
+      # Step 1: Login with existing test user
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testUserEmail }}"
+            password: "{{ testUserPassword }}"
+          capture:
+            - json: "$.accessToken"
+              as: "accessToken"
+            - json: "$.user.id"
+              as: "userId"
+          expect:
+            - statusCode: 200
+            - hasProperty: "accessToken"
+            - hasProperty: "user"
+      
+      # Step 2: Simulate user activity (reading, clicking, etc.)
+      - think: 5
+      
+      # Step 3: Make an authenticated request (simulate accessing protected resource)
+      # This would typically be a GET request to a protected endpoint
+      # For now, we'll just add a think time
+      - think: 3
+      
+      # Step 4: Logout
+      - post:
+          url: "/api/auth/logout"
+          expect:
+            - statusCode: 204
+      
+      # Step 5: Verify logout was successful by trying to refresh
+      # (This should fail with 400/401)
+      - post:
+          url: "/api/auth/refresh"
+          expect:
+            - statusCode:
+                - 400
+                - 401
+
+  # ============================================================================
+  # Scenario 3: Token Refresh Heavy (15% of traffic)
+  # Tests: Long-lived session with multiple token refreshes
+  # ============================================================================
+  - name: "Token Refresh Heavy"
+    weight: 15
+    flow:
+      # Step 1: Login
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testUserEmail }}"
+            password: "{{ testUserPassword }}"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$.accessToken"
+              as: "accessToken"
+      
+      # Step 2: Multiple refresh cycles (simulate long-lived session)
+      - loop:
+          - think: 2  # Simulate user activity between refreshes
+          - post:
+              url: "/api/auth/refresh"
+              expect:
+                - statusCode: 200
+                - hasProperty: "accessToken"
+              capture:
+                - json: "$.accessToken"
+                  as: "accessToken"
+        count: 5
+      
+      # Step 3: Final logout
+      - post:
+          url: "/api/auth/logout"
+          expect:
+            - statusCode: 204
+
+  # ============================================================================
+  # Scenario 4: Logout All Devices (5% of traffic)
+  # Tests: Multi-device logout functionality
+  # ============================================================================
+  - name: "Logout All Devices"
+    weight: 5
+    flow:
+      # Step 1: Login (Session 1)
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testUserEmail }}"
+            password: "{{ testUserPassword }}"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$.accessToken"
+              as: "accessToken1"
+      
+      # Step 2: Think time
+      - think: 2
+      
+      # Step 3: Logout from all devices
+      - post:
+          url: "/api/auth/logout-all"
+          headers:
+            Authorization: "Bearer {{ accessToken1 }}"
+          expect:
+            - statusCode: 204
+      
+      # Step 4: Verify all tokens are invalidated
+      - post:
+          url: "/api/auth/refresh"
+          expect:
+            - statusCode: 401
+
+# Performance assertions - Tests fail if these thresholds are exceeded
+ensure:
+  maxErrorRate: 1          # Maximum 1% error rate allowed
+  p95: 500                 # 95% of requests must complete under 500ms
+  p99: 1000                # 99% of requests must complete under 1s
+  max: 5000                # No request should take more than 5 seconds
