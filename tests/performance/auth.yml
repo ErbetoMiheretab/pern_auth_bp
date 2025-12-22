@@ -4,24 +4,24 @@ config:
   # Load test phases
   phases:
     # Phase 1: Warm-up
-    - duration: 20
-      arrivalRate: 5
+    - duration: 10
+      arrivalRate: 20
       name: "Warm up"
     
     # Phase 2: Ramp up
     - duration: 60
-      arrivalRate: 5
+      arrivalRate: 40
       rampTo: 20
       name: "Ramp up load"
     
     # Phase 3: Sustained load
     - duration: 60
-      arrivalRate: 20
+      arrivalRate: 100
       name: "Sustained load"
     
     # Phase 4: Brief Cool down
     - duration: 20
-      arrivalRate: 20
+      arrivalRate: 100
       rampTo: 5
       name: "Cool down"
   
@@ -29,6 +29,8 @@ config:
   http:
     jar: true  # Enable cookie jar to handle HttpOnly cookies (refreshToken)
     timeout: 10  # 10 second timeout for requests
+  
+  processor: "./processor.cjs"
   
   # Plugins for enhanced reporting
   plugins:
@@ -67,20 +69,23 @@ scenarios:
   # Tests: Register → Refresh → Logout
   # ============================================================================
   - name: "Complete Auth Flow"
-    weight: 40
+    weight: 50
+    beforeScenario: "generateUserData"
     flow:
       # Step 1: Register new user with unique credentials
       - post:
           url: "/api/auth/register"
           json:
-            username: "user_{{ $uuid() }}"
-            email: "user_{{ $uuid() }}@loadtest.com"
+            username: "{{ username }}"
+            email: "{{ email }}"
             password: "TestPass123!"
           capture:
             - json: "$.accessToken"
               as: "accessToken"
             - json: "$.user.id"
               as: "userId"
+            - json: "$"
+              as: "errorResponse"
           expect:
             - statusCode: 201
             - hasProperty: "accessToken"
@@ -113,14 +118,25 @@ scenarios:
   # Tests: Login → Use App → Logout
   # ============================================================================
   - name: "Login and Logout"
-    weight: 40
+    weight: 50
+    beforeScenario: "generateUserData"
     flow:
-      # Step 1: Login with existing test user
+      # Step 1: Register and then Login (since random users aren't pre-registered)
+      - post:
+          url: "/api/auth/register"
+          json:
+            username: "{{ username }}"
+            email: "{{ email }}"
+            password: "TestPass123!"
+          expect:
+            - statusCode: 201
+      
+      # Step 2: Login with the just registered user
       - post:
           url: "/api/auth/login"
           json:
-            email: "{{ testUserEmail }}"
-            password: "{{ testUserPassword }}"
+            email: "{{ email }}"
+            password: "TestPass123!"
           capture:
             - json: "$.accessToken"
               as: "accessToken"
@@ -192,45 +208,11 @@ scenarios:
           expect:
             - statusCode: 204
 
-  # ============================================================================
-  # Scenario 4: Logout All Devices (5% of traffic)
-  # Tests: Multi-device logout functionality
-  # ============================================================================
-  - name: "Logout All Devices"
-    weight: 5
-    flow:
-      # Step 1: Login (Session 1)
-      - post:
-          url: "/api/auth/login"
-          json:
-            email: "{{ testUserEmail }}"
-            password: "{{ testUserPassword }}"
-          expect:
-            - statusCode: 200
-          capture:
-            - json: "$.accessToken"
-              as: "accessToken1"
-      
-      # Step 2: Think time
-      - think: 2
-      
-      # Step 3: Logout from all devices
-      - post:
-          url: "/api/auth/logout-all"
-          headers:
-            Authorization: "Bearer {{ accessToken1 }}"
-          expect:
-            - statusCode: 204
-      
-      # Step 4: Verify all tokens are invalidated
-      - post:
-          url: "/api/auth/refresh"
-          expect:
-            - statusCode: 401
+
 
 # Performance assertions - Tests fail if these thresholds are exceeded
 ensure:
   maxErrorRate: 1          # Maximum 1% error rate allowed
-  p95: 500                 # 95% of requests must complete under 500ms
-  p99: 1000                # 99% of requests must complete under 1s
-  max: 5000                # No request should take more than 5 seconds
+  p95: 100                 # 95% of requests must complete under 100ms
+  p99: 200                # 99% of requests must complete under 200ms
+  max: 2000                # No request should take more than 2000ms

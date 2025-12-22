@@ -40,7 +40,7 @@ check_service() {
 wait_for_service() {
     local service=$1
     local port=$2
-    local max_attempts=30
+    local max_attempts=10
     local attempt=1
     
     echo "Waiting for $service to be ready..."
