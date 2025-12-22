@@ -9,29 +9,7 @@ import RefreshTokenFactory from "./refreshToken.js";
 import PermissionFactory from "./permission.js";
 import RolePermissionFactory from "./rolePermission.js";
 
-// 1. Initialize Sequelize depending on environment
-const env = process.env.NODE_ENV || "development";
-
-let sequelize;
-
-if (env === "test") {
-  // Use real DB for tests (injected via env vars)
-  const { db } = vars;
-  sequelize = new Sequelize(db.testName || "pernAuthTest", db.user, db.password, {
-    host: db.host,
-    port: db.port,
-    dialect: "postgres",
-    logging: false, // set to console.log to see SQL queries
-  });
-} else {
-  const { db } = vars;
-  sequelize = new Sequelize(db.name, db.user, db.password, {
-    host: db.host,
-    port: db.port,
-    dialect: "postgres",
-    logging: false,
-  });
-}
+import sequelize from "../config/db.js";
 
 // 2. Initialize models from their factories
 const User = UserFactory(sequelize);

@@ -93,14 +93,19 @@ export const refresh = async (token) => {
     throw error;
   }
 
-  const isRevoked = await tokenStore.isRevoked(decoded.jti);
+   // Run database/cache checks in parallel for speed
+  const [isRevoked, isVersionValid] = await Promise.all([
+    tokenStore.isRevoked(decoded.jti),
+    tokenStore.isVersionValid(decoded)
+  ]);
+
   if (isRevoked) {
     const error = new Error("Token revoked");
     error.status = 401;
     throw error;
   }
 
-  const isVersionValid = await tokenStore.isVersionValid(decoded);
+
   if (!isVersionValid) {
     const error = new Error("Token version mismatch (User logged out?)");
     error.status = 401;

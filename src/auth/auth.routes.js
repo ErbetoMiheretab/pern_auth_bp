@@ -7,13 +7,14 @@ const router = express.Router();
 
 // Validation Middleware
 const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false });
   if (error) {
     const errorMessages = error.details.map((detail) => detail.message);
     const err = new Error(errorMessages.join(", "));
     err.status = 400;
     return next(err);
   }
+  req.body = value;
   next();
 };
 

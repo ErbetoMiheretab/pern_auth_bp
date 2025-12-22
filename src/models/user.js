@@ -24,8 +24,8 @@ export default (sequelize) => {
           // Temporarily store the raw password to access in hooks or validation
           this.setDataValue("password", value);
         },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
       },
+      isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
 
     {
@@ -35,17 +35,16 @@ export default (sequelize) => {
       hooks: {
         beforeValidate: async (user) => {
           if (user.password) {
-            const rounds = vars.bcrypt && vars.bcrypt.saltRounds ? parseInt(vars.bcrypt.saltRounds) : 10;
-            const salt = await bcrypt.genSalt(vars.bcrypt.saltRounds || 10);
+            const saltRounds = vars.bcrypt.saltRounds || 12;
+            const salt = await bcrypt.genSalt(saltRounds);
             user.passwordHash = await bcrypt.hash(user.password, salt);
           }
         },
         beforeUpdate: async (user) => {
-          if (user.changed("passwordHash")) {
-            user.passwordHash = await bcrypt.hash(
-              user.passwordHash,
-              vars.bcrypt.saltRounds
-            );
+          if (user.changed("password")) {
+            const saltRounds = vars.bcrypt.saltRounds || 12;
+            const salt = await bcrypt.genSalt(saltRounds);
+            user.passwordHash = await bcrypt.hash(user.password, salt);
           }
         },
       },

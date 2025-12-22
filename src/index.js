@@ -36,6 +36,17 @@ app.use((err, req, res, next) => {
 
 const PORT = port;
 app.listen(PORT, async () => {
-  await sequelize.authenticate();
-  console.log(`Auth service running on ${PORT}`);
+  try {
+    await sequelize.authenticate();
+    console.log("Database connection established.");
+
+    // Sync models with database
+    await sequelize.sync({ alter: true });
+    console.log("Database schema synchronized.");
+
+    console.log(`Auth service running on ${PORT}`);
+  } catch (err) {
+    console.error("Unable to start the server:", err.message);
+    process.exit(1);
+  }
 });
