@@ -8,7 +8,7 @@ const sequelize = new Sequelize(dbName, db.user, db.password, {
   port: db.port,
   dialect: "postgres",
   logging: env === "test" ? false : console.log,
-  pool: { max: 50, min: 5, acquire: 30000, idle: 10000 },
+  pool: { max: 10, min: 5, acquire: 30000, idle: 10000 },
 });
 
 
