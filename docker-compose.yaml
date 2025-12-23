@@ -1,4 +1,61 @@
 services:
+  app:
+    build: .
+    deploy:
+      replicas: 3
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASS=admin123
+      - DB_NAME=pern_auth
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASS=admin123
+      - ACCESS_SECRET=super-long-access-secret
+      - ACCESS_EXPIRE=15m
+      - REFRESH_SECRET=even-longer-refresh-secret
+      - REFRESH_EXPIRE=30d
+      - SALT_ROUNDS=12
+    depends_on:
+      - postgres
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: mern_auth_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: pern_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: pern_auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: pern_redis
+    command: ["redis-server", "--requirepass", "admin123"]
+    environment:
+      REDIS_PASSWORD: admin123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   postgres_test:
     image: postgres:17-alpine
     container_name: pern_postgres_test
@@ -10,7 +67,7 @@ services:
       - "5549:5432"
     profiles: ["test"]
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_test_data:/var/lib/postgresql/data
 
   redis_test:
     image: redis:7-alpine
@@ -22,8 +79,10 @@ services:
       - "6381:6379"
     profiles: ["test"]
     volumes:
-      - redis_data:/data
+      - redis_test_data:/data
 
 volumes:
   postgres_data: {}
   redis_data: {}
+  postgres_test_data: {}
+  redis_test_data: {}

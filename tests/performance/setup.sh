@@ -17,7 +17,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-API_URL="${API_URL:-http://localhost:4000}"
+API_URL="${API_URL:-http://localhost}"
 TEST_USER_EMAIL="test@example.com"
 TEST_USER_PASSWORD="Password123!"
 TEST_USER_USERNAME="testuser"
@@ -99,16 +99,16 @@ else
 fi
 
 # Check Application
-if check_service "Application API" 4000; then
+if check_service "Application API (Nginx)" 80; then
     :
 else
-    echo -e "${YELLOW}!${NC} Application API not detected on port 4000"
+    echo -e "${YELLOW}!${NC} Application API not detected on port 80"
     echo "  Start with: npm run dev"
     echo ""
     read -p "Would you like to wait for the API to start? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        wait_for_service "Application API" 4000
+        wait_for_service "Application API (Nginx)" 80
     else
         echo -e "${RED}Cannot proceed without the API running${NC}"
         exit 1
