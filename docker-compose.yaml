@@ -19,6 +19,13 @@ services:
       - REFRESH_EXPIRE=30d
       - SALT_ROUNDS=12
     profiles: ["test"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.services.app.loadbalancer.server.port=4000"
+      - "traefik.http.services.app.loadbalancer.healthcheck.path=/api/auth/health"
+      - "traefik.http.services.app.loadbalancer.healthcheck.interval=10s"
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,22 +45,25 @@ services:
       retries: 3
       start_period: 30s
 
-  nginx:
-    image: nginx:alpine
-    container_name: mern_auth_nginx
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
     profiles: ["test"]
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=INFO"
     ports:
       - "80:80"
+      - "8080:8080"  # Traefik dashboard
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       app:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/api/auth/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 
   postgres:

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test DB_HOST=localhost DB_PORT=5549 DB_USER=admin DB_PASS=admin123 DB_TEST_NAME=pernAuthTest REDIS_HOST=localhost REDIS_PORT=6381 REDIS_PASS=admin123 NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
-    "dev:test": "NODE_ENV=test DB_HOST=localhost DB_PORT=5549 DB_USER=admin DB_PASS=admin123 DB_TEST_NAME=pernAuthTest REDIS_HOST=localhost REDIS_PORT=6381 REDIS_PASS=admin123 nodemon src/index.js",
+    "dev:test": "nodemon src/index.js",
     "start": "node src/index.js"
   },
   "keywords": [],

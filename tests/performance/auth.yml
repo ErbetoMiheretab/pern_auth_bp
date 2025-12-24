@@ -5,23 +5,23 @@ config:
   phases:
     # Phase 1: Warm-up
     - duration: 10
-      arrivalRate: 20
+      arrivalRate: 80
       name: "Warm up"
     
     # Phase 2: Ramp up
     - duration: 60
-      arrivalRate: 40
+      arrivalRate: 160
       rampTo: 20
       name: "Ramp up load"
     
     # Phase 3: Sustained load
     - duration: 60
-      arrivalRate: 100
+      arrivalRate: 400
       name: "Sustained load"
     
     # Phase 4: Brief Cool down
     - duration: 20
-      arrivalRate: 100
+      arrivalRate: 400
       rampTo: 5
       name: "Cool down"
   
