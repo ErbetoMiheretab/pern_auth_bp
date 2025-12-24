@@ -1,20 +1,29 @@
 # Stage 1: Build/Dependency installation
-# Use a consistent node version
 FROM node:22-alpine
+
+# 1. Install wget (and curl) explicitly for Healthchecks
+# Alpine comes with a basic wget, but installing the full package is safer.
+RUN apk add --no-cache wget curl
 
 WORKDIR /app
 
-# Copy package files FIRST to leverage Docker layer caching
-COPY package*.json ./
+# 2. Set ownership of the directory to the 'node' user
+# This prevents permission errors when npm writes files
+RUN chown -R node:node /app
 
-# Install ALL dependencies (including dev) — expected in dev
+# 3. Switch to the non-root user 'node'
+USER node
+
+# Copy package files (with correct ownership)
+COPY --chown=node:node package*.json ./
+
+# Install dependencies
 RUN npm ci
 
-COPY . .
+# Copy the rest of the application code
+COPY --chown=node:node . .
 
-
-# Expose the port your app uses (adjust if needed)
 EXPOSE 4000
 
-# Run in development mode
-CMD ["npm", "run", "dev:test"]
+# Run the application
+CMD ["npm", "start"]

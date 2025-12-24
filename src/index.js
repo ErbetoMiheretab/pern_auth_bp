@@ -1,6 +1,5 @@
 // server.js
 import cluster from "cluster";
-import os from "os";
 import express, { json } from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -13,18 +12,42 @@ import { swaggerSpec } from "./config/swagger.js";
 
 const PORT = port;
 // const NUM_CPUS = os.cpus().length; // constant for number of CPUs
-const NUM_CPUS = 4; 
+const NUM_CPUS = 2;
 if (cluster.isPrimary) {
-  console.log(`Primary ${process.pid} is running. Forking ${NUM_CPUS} workers...`);
+  console.log(
+    `Primary ${process.pid} is running. Forking ${NUM_CPUS} workers...`
+  );
 
-  for (let i = 0; i < NUM_CPUS; i++) {
-    cluster.fork();
-  }
+  const initializePrimary = async () => {
+    try {
+      await sequelize.authenticate();
+      console.log("Primary: Database connection established.");
+      // Sync schema only once here
+      await sequelize.sync({ alter: true });
+      console.log("Primary: Database schema synchronized.");
 
-  cluster.on("exit", (worker) => {
-    console.log(`Worker ${worker.process.pid} died. Forking replacement...`);
-    cluster.fork();
-  });
+      // Fork workers only after DB is ready
+      console.log(`Forking ${NUM_CPUS} workers...`);
+      for (let i = 0; i < NUM_CPUS; i++) {
+        cluster.fork();
+      }
+
+      cluster.on("exit", (worker) => {
+        console.log(
+          `Worker ${worker.process.pid} died. Forking replacement...`
+        );
+        cluster.fork();
+      });
+    } catch (error) {
+      console.error(
+        "Primary: Unable to start. DB connection failed:",
+        error.message
+      );
+      process.exit(1);
+    }
+  };
+
+  initializePrimary();
 } else {
   const app = express();
 
@@ -37,6 +60,9 @@ if (cluster.isPrimary) {
   );
   app.use(json());
   app.use(cookieParser());
+  app.get("/api/auth/health", (req, res) => {
+    res.json({ status: "ok", worker: process.pid });
+  });
   app.use("/api/auth", authRoutes);
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -44,19 +70,25 @@ if (cluster.isPrimary) {
     const status = err.status || 500;
     if (status === 500) console.error(err);
     // Log the specific worker and the error stack
-    console.error(`[Worker ${process.pid}] 500 Error: ${err.message}`, err.stack);
+    console.error(
+      `[Worker ${process.pid}] 500 Error: ${err.message}`,
+      err.stack
+    );
     res.status(status).json({ message: err.message });
   });
 
-  const server = app.listen(PORT, async () => {
+  const server = app.listen(PORT, "0.0.0.0", async () => {
     try {
       await sequelize.authenticate();
       console.log("Database connection established.");
-      await sequelize.sync({ alter: true });
-      console.log("Database schema synchronized.");
-      console.log(`Worker ${process.pid} running on port ${PORT}`);
-    } catch (err) {
-      console.error("Unable to start the server:", err.message);
+      // await sequelize.sync({ alter: true });
+      // console.log("Database schema synchronized.");
+      // console.log(`Worker ${process.pid} running on port ${PORT}`);
+    } catch (error) {
+      console.error(
+        `Worker ${process.pid} failed to connect to DB:`,
+        error.message
+      );
       process.exit(1);
     }
   });
